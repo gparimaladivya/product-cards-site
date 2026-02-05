@@ -32,8 +32,7 @@ pipeline {
       steps {
         powershell '''
           # Start static server in background
-          $server = Start-Process -FilePath "npx" -ArgumentList "http-server public -p 3000 -c-1" -PassThru -WindowStyle Hidden -RedirectStandardOutput "server.log" -RedirectStandardError "server.log"
-
+          $server = Start-Process -FilePath "npx" -ArgumentList "http-server public -p 3000 -c-1" -PassThru -WindowStyle Hidden
           try {
             # Wait until server is up
             $ok = $false
