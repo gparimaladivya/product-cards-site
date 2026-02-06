@@ -30,33 +30,37 @@ pipeline {
 
     stage('Serve + E2E Tests') {
       steps {
-        sh '''
-          # Start static server in background
-          $server = Start-Process -FilePath "npx" -ArgumentList "http-server public -p 3000 -c-1" -PassThru -WindowStyle Hidden
-          try {
-            # Wait until server is up
-            $ok = $false
-            for ($i = 0; $i -lt 30; $i++) {
-              try {
-                Invoke-WebRequest -UseBasicParsing "http://127.0.0.1:3000" | Out-Null
-                $ok = $true
-                break
-              } catch {
-                Start-Sleep -Seconds 1
-              }
-            }
+    sh '''
+  echo "Starting static server on Linux..."
 
-            if (-not $ok) { throw "Server did not become ready on http://127.0.0.1:3000" }
+  # Kill any old server if running
+  pkill -f "http-server public -p 3000" || true
 
-            # Run Playwright tests
-            npx playwright test
-          }
-          finally {
-            if ($server -and -not $server.HasExited) {
-              Stop-Process -Id $server.Id -Force
-            }
-          }
-        '''
+  # Start server in background
+  nohup npx http-server public -p 3000 -c-1 > /tmp/product-cards-server.log 2>&1 &
+  SERVER_PID=$!
+
+  # Wait until server is ready (max ~30s)
+  for i in {1..30}; do
+    if curl -sSf http://127.0.0.1:3000 > /dev/null; then
+      echo "Server is up"
+      break
+    fi
+    sleep 1
+  done
+
+  # Final check
+  curl -I http://127.0.0.1:3000 || exit 1
+
+  # Run Playwright tests
+  npx playwright test || EXIT_CODE=$?
+
+  # Stop server
+  kill $SERVER_PID || true
+
+  exit ${EXIT_CODE:-0}
+'''
+
       }
     }
   }
