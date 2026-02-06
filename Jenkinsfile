@@ -14,7 +14,7 @@ pipeline {
 
     stage('Install') {
       steps {
-        powershell '''
+        sh '''
           node -v
           npm -v
 
@@ -30,7 +30,7 @@ pipeline {
 
     stage('Serve + E2E Tests') {
       steps {
-        powershell '''
+        sh '''
           # Start static server in background
           $server = Start-Process -FilePath "npx" -ArgumentList "http-server public -p 3000 -c-1" -PassThru -WindowStyle Hidden
           try {
